@@ -12,6 +12,11 @@ interface CaregiverSetupProps {
 export function CaregiverSetup({ onBack }: CaregiverSetupProps) {
   const [tab, setTab] = useState<Tab>('profile')
 
+  function handleDemoLoaded() {
+    // Switch to Dashboard so the caregiver immediately sees populated data
+    setTab('dashboard')
+  }
+
   return (
     <div className="caregiver-setup">
       <div className="setup-header">
@@ -40,7 +45,7 @@ export function CaregiverSetup({ onBack }: CaregiverSetupProps) {
         </button>
       </div>
 
-      {tab === 'profile' && <ProfileEditor />}
+      {tab === 'profile' && <ProfileEditor onDemoLoaded={handleDemoLoaded} />}
       {tab === 'dashboard' && <CaregiverDashboard />}
     </div>
   )

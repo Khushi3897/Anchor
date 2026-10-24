@@ -49,6 +49,8 @@ export type QuestionIntent =
   | 'where-am-i'
   | 'what-day'
   | 'where-caregiver'
+  | 'feeling'   // emotional / wellbeing questions
+  | 'person'    // asking about a specific named person
   | 'unknown';
 
 export interface QuestionEvent {
@@ -57,13 +59,15 @@ export interface QuestionEvent {
   rawInput: string;
 }
 
-export type AlertSeverity = 'urgent' | 'check-in';
+// 'missing-info' is raised when the profile has no answer for a valid question
+export type AlertSeverity = 'urgent' | 'check-in' | 'missing-info';
 
 export interface CaregiverAlert {
   id: string;              // crypto.randomUUID()
   severity: AlertSeverity;
   message: string;
   timestamp: string;       // ISO 8601 UTC
+  handled: boolean;        // caregiver can mark as handled in dashboard
   triggerPhrase?: string;  // safety escalations
   intent?: QuestionIntent; // repeat detection / unanswered intents
   repeatCount?: number;    // repeat detection

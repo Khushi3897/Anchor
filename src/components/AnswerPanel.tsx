@@ -6,18 +6,11 @@ interface AnswerPanelProps {
   photoUrl?: string
   muted: boolean
   onReplay: () => void
-  onLookAtPhotos?: () => void  // only shown when photo cards exist
+  onLookAtPhotos?: () => void
   onClose: () => void
 }
 
-export function AnswerPanel({
-  answer,
-  photoUrl,
-  muted: _muted,
-  onReplay,
-  onLookAtPhotos,
-  onClose,
-}: AnswerPanelProps) {
+export function AnswerPanel({ answer, photoUrl, muted: _muted, onReplay, onLookAtPhotos, onClose }: AnswerPanelProps) {
   const [imgError, setImgError] = useState(false)
 
   return (
@@ -38,7 +31,7 @@ export function AnswerPanel({
           </button>
           {onLookAtPhotos && (
             <button className="answer-btn answer-btn--photos" onClick={onLookAtPhotos}>
-              📷 Look at photos?
+              📷 Look at photos
             </button>
           )}
           <button className="answer-btn answer-btn--close" onClick={onClose}>

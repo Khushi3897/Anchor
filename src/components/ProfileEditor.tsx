@@ -1,7 +1,7 @@
 // src/components/ProfileEditor.tsx — full Life Profile editor
 import { useState, useRef } from 'react'
 import type { LifeProfile, Caregiver, Person, Visitor, PhotoCard, GentleResponse } from '../lib/types'
-import { loadProfile, saveProfile } from '../lib/storage'
+import { loadProfile, saveProfile, seedDemoData } from '../lib/storage'
 import { demoPersona } from '../data/demoPersona'
 
 const EMPTY_PROFILE: LifeProfile = {
@@ -28,7 +28,9 @@ function fileToDataUrl(file: File): Promise<string> {
   })
 }
 
-export function ProfileEditor() {
+interface ProfileEditorProps { onDemoLoaded?: () => void }
+
+export function ProfileEditor({ onDemoLoaded }: ProfileEditorProps) {
   const saved = loadProfile()
   const [profile, setProfile] = useState<LifeProfile>(saved ?? EMPTY_PROFILE)
   const [errors, setErrors] = useState<string[]>([])
@@ -61,6 +63,8 @@ export function ProfileEditor() {
     const demo = { ...demoPersona, isDemoPersona: true }
     saveProfile(demo)
     setProfile(demo)
+    seedDemoData(demo.primaryCaregiver.name)
+    onDemoLoaded?.()
   }
 
   // ── Photo upload helpers ─────────────────────────────────────────
