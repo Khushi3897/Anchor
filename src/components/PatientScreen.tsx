@@ -15,6 +15,7 @@ import { speak, cancelSpeech } from '../lib/speech'
 import { tapFeedback } from '../lib/haptics'
 import { loadProfile, loadEvents, appendEvent, appendAlert } from '../lib/storage'
 import type { QuestionIntent } from '../lib/types'
+import type { VisualTheme } from '../lib/answerFunction'
 
 interface PatientScreenProps {
   onEnterCaregiver: () => void
@@ -23,6 +24,8 @@ interface PatientScreenProps {
 interface ActiveAnswer {
   text: string
   photoUrl?: string
+  visualIcon?: string
+  visualTheme?: VisualTheme
   offerSlideshow: boolean
 }
 
@@ -71,7 +74,7 @@ export function PatientScreen({ onEnterCaregiver }: PatientScreenProps) {
     appendEvent({ intent, timestamp: new Date().toISOString(), rawInput: '' })
     const repeatResult = logRepeatIfNeeded(intent)
     const result = buildAnswer(intent, profile, repeatResult.isRepeat, '')
-    setActiveAnswer({ text: result.text, photoUrl: result.photoUrl, offerSlideshow: result.offerSlideshow })
+    setActiveAnswer({ text: result.text, photoUrl: result.photoUrl, visualIcon: result.visualIcon, visualTheme: result.visualTheme, offerSlideshow: result.offerSlideshow })
     speak(result.text, muted)
   }
 
@@ -88,7 +91,7 @@ export function PatientScreen({ onEnterCaregiver }: PatientScreenProps) {
         handled: false,
         triggerPhrase: safety.triggerPhrase,
       })
-      setActiveAnswer({ text: replyText, offerSlideshow: false })
+      setActiveAnswer({ text: replyText, visualIcon: '🫂', visualTheme: 'safe', offerSlideshow: false })
       speak(replyText, muted)
       return
     }
@@ -96,7 +99,7 @@ export function PatientScreen({ onEnterCaregiver }: PatientScreenProps) {
     appendEvent({ intent, timestamp: new Date().toISOString(), rawInput: text })
     const repeatResult = logRepeatIfNeeded(intent)
     const result = buildAnswer(intent, profile, repeatResult.isRepeat, text)
-    setActiveAnswer({ text: result.text, photoUrl: result.photoUrl, offerSlideshow: result.offerSlideshow })
+    setActiveAnswer({ text: result.text, photoUrl: result.photoUrl, visualIcon: result.visualIcon, visualTheme: result.visualTheme, offerSlideshow: result.offerSlideshow })
     speak(result.text, muted)
   }
 
@@ -111,7 +114,7 @@ export function PatientScreen({ onEnterCaregiver }: PatientScreenProps) {
         ? `It's okay. You are safe, and ${cg} is close by.`
         : "It's okay. You are safe, and someone who loves you is close by."
     appendEvent({ intent: 'feeling', timestamp: new Date().toISOString(), rawInput: 'feeling worried' })
-    setActiveAnswer({ text, photoUrl: profile?.primaryCaregiver?.photoUrl, offerSlideshow: true })
+    setActiveAnswer({ text, photoUrl: profile?.primaryCaregiver?.photoUrl, visualIcon: '🤗', visualTheme: 'feeling', offerSlideshow: true })
     speak(text, muted)
   }
 
@@ -170,6 +173,8 @@ export function PatientScreen({ onEnterCaregiver }: PatientScreenProps) {
         <AnswerPanel
           answer={activeAnswer.text}
           photoUrl={activeAnswer.photoUrl}
+          visualIcon={activeAnswer.visualIcon}
+          visualTheme={activeAnswer.visualTheme}
           muted={muted}
           onReplay={handleReplay}
           onLookAtPhotos={canShowSlideshow ? () => setShowSlideshow(true) : undefined}

@@ -5,11 +5,26 @@ import type { QuestionIntent, LifeProfile } from './types'
 import { appendAlert } from './storage'
 import { isPainfulTopic } from './intentMatcher'
 
+export type VisualTheme = 'who' | 'where' | 'day' | 'caregiver' | 'feeling' | 'comfort' | 'safe'
+
 export interface AnswerResult {
   text: string
-  photoUrl?: string      // relevant photo data URL, if any
+  photoUrl?: string       // relevant photo data URL, if any
+  visualIcon: string      // themed emoji shown large when no photo exists
+  visualTheme: VisualTheme // drives the glow colour behind the visual
   alertWritten: boolean
   offerSlideshow: boolean // true when repeat comfort phrase was used
+}
+
+// Themed fallback visuals — big friendly icon + colour theme per intent
+const VISUALS: Record<VisualTheme, string> = {
+  who:       '👨‍👩‍👧',
+  where:     '🏡',
+  day:       '🌤️',
+  caregiver: '💛',
+  feeling:   '🤗',
+  comfort:   '🕊️',
+  safe:      '🛟',
 }
 
 // The exact phrase specified for repeat detection (Req 14.3 / steering file)
@@ -49,11 +64,14 @@ function formatDate(): string {
 
 function makeResult(
   text: string,
+  theme: VisualTheme,
   opts: { photoUrl?: string; alertWritten?: boolean; offerSlideshow?: boolean } = {},
 ): AnswerResult {
   return {
     text,
     photoUrl: opts.photoUrl,
+    visualIcon: VISUALS[theme],
+    visualTheme: theme,
     alertWritten: opts.alertWritten ?? false,
     offerSlideshow: opts.offerSlideshow ?? false,
   }
@@ -72,14 +90,14 @@ export function buildAnswer(
 
   if (!profile) {
     writeMissingInfoAlert('unknown', 'No life profile found', rawInput)
-    return makeResult(caregiverFallback(null), { alertWritten: true })
+    return makeResult(caregiverFallback(null), 'caregiver', { alertWritten: true })
   }
 
   // Painful-topic: check gentle responses first (regardless of intent)
   if (isPainfulTopic(rawInput)) {
     const gentle = findGentleResponse(rawInput, profile)
     if (gentle) {
-      return makeResult(prefix + gentle + suffix, { offerSlideshow })
+      return makeResult(prefix + gentle + suffix, 'comfort', { offerSlideshow })
     }
     // Painful topic but no gentle response — comfort without adding facts, raise check-in
     writeCheckInAlert(
@@ -91,7 +109,7 @@ export function buildAnswer(
     const comfort = cgName
       ? `It's okay. You are safe here. I'll get ${cgName}.`
       : "It's okay. You are safe here. I'll get your caregiver."
-    return makeResult(prefix + comfort + suffix, { alertWritten: true, offerSlideshow })
+    return makeResult(prefix + comfort + suffix, 'comfort', { alertWritten: true, offerSlideshow })
   }
 
   switch (intent) {
@@ -99,7 +117,7 @@ export function buildAnswer(
       const cgName = caregiverName(profile)
       if (!cgName) {
         writeMissingInfoAlert('who', 'Missing caregiver name for "who" answer', rawInput)
-        return makeResult(caregiverFallback(profile), { alertWritten: true })
+        return makeResult(caregiverFallback(profile), 'caregiver', { alertWritten: true })
       }
       const parts: string[] = [`${cgName} is here.`]
       const otherPeople = profile.people.slice(0, 2)
@@ -109,7 +127,7 @@ export function buildAnswer(
       }
       const photoUrl = profile.people.find((p) => p.photoUrl)?.photoUrl
         ?? profile.primaryCaregiver.photoUrl
-      return makeResult(prefix + parts.join(' ') + suffix, { photoUrl, offerSlideshow })
+      return makeResult(prefix + parts.join(' ') + suffix, 'who', { photoUrl, offerSlideshow })
     }
 
     case 'where-am-i': {
@@ -117,14 +135,14 @@ export function buildAnswer(
       const reassurance = profile.reassuranceText?.trim()
       if (!loc && !reassurance) {
         writeMissingInfoAlert('where-am-i', 'Missing location and reassurance text', rawInput)
-        return makeResult(caregiverFallback(profile), { alertWritten: true })
+        return makeResult(caregiverFallback(profile), 'caregiver', { alertWritten: true })
       }
       if (!loc) {
         writeMissingInfoAlert('where-am-i', 'Missing location text', rawInput)
-        return makeResult(prefix + reassurance! + suffix, { alertWritten: true, offerSlideshow })
+        return makeResult(prefix + reassurance! + suffix, 'where', { alertWritten: true, offerSlideshow })
       }
       const text = reassurance ? `${loc} ${reassurance}` : loc
-      return makeResult(prefix + text + suffix, { offerSlideshow })
+      return makeResult(prefix + text + suffix, 'where', { offerSlideshow })
     }
 
     case 'what-day': {
@@ -144,20 +162,20 @@ export function buildAnswer(
       }
 
       const text = sentence2 ? `${sentence1} ${sentence2}` : sentence1
-      return makeResult(prefix + text + suffix, { offerSlideshow })
+      return makeResult(prefix + text + suffix, 'day', { offerSlideshow })
     }
 
     case 'where-caregiver': {
       const cg = profile.primaryCaregiver
       if (!cg?.name) {
         writeMissingInfoAlert('where-caregiver', 'Missing caregiver info', rawInput)
-        return makeResult(caregiverFallback(profile), { alertWritten: true })
+        return makeResult(caregiverFallback(profile), 'caregiver', { alertWritten: true })
       }
       const text = [
         `${cg.name} will be with you soon.`,
         cg.relationship ? `${cg.name} is your ${cg.relationship}.` : '',
       ].filter(Boolean).join(' ')
-      return makeResult(prefix + text + suffix, { photoUrl: cg.photoUrl, offerSlideshow })
+      return makeResult(prefix + text + suffix, 'caregiver', { photoUrl: cg.photoUrl, offerSlideshow })
     }
 
     case 'feeling': {
@@ -169,7 +187,7 @@ export function buildAnswer(
         : cgName
           ? `You are safe. ${cgName} is here for you.`
           : 'You are safe.'
-      return makeResult(prefix + base + suffix, { offerSlideshow })
+      return makeResult(prefix + base + suffix, 'feeling', { offerSlideshow })
     }
 
     case 'person': {
@@ -180,17 +198,17 @@ export function buildAnswer(
       )
       if (match) {
         const text = `${match.name} is your ${match.relationship}. ${match.warmSentence}`
-        return makeResult(prefix + text + suffix, { photoUrl: match.photoUrl, offerSlideshow })
+        return makeResult(prefix + text + suffix, 'who', { photoUrl: match.photoUrl, offerSlideshow })
       }
       // Named person not in profile
       writeMissingInfoAlert('person', `Asked about unknown person: "${rawInput}"`, rawInput)
-      return makeResult(caregiverFallback(profile), { alertWritten: true })
+      return makeResult(caregiverFallback(profile), 'caregiver', { alertWritten: true })
     }
 
     case 'unknown':
     default: {
       writeMissingInfoAlert('unknown', `Unrecognised question: "${rawInput}"`, rawInput)
-      return makeResult(caregiverFallback(profile), { alertWritten: true })
+      return makeResult(caregiverFallback(profile), 'caregiver', { alertWritten: true })
     }
   }
 }

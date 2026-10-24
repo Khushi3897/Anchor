@@ -1129,3 +1129,64 @@ body {
 @media (max-width: 640px) {
   .comfort-btn { min-width: 100%; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ANSWER VISUAL — themed icon / photo with soft glow
+   ══════════════════════════════════════════════════════════════ */
+
+.answer-visual {
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: visualFloat 4s ease-in-out infinite;
+}
+
+/* Soft radial glow behind the visual (colour set per theme) */
+.answer-visual::before {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--glow, #cfe2f8) 0%, transparent 70%);
+  z-index: 0;
+  opacity: .85;
+}
+
+.answer-visual__icon {
+  position: relative;
+  z-index: 1;
+  font-size: 110px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.14));
+}
+
+/* Photo variant sits on top of the glow too */
+.answer-visual .answer-photo {
+  position: relative;
+  z-index: 1;
+  width: 180px;
+  height: 180px;
+}
+
+/* Gentle, slow float — no sudden motion (dementia-safe) */
+@keyframes visualFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+/* Per-theme glow colours */
+.answer-visual--who       { --glow: #dbe7ff; }
+.answer-visual--where     { --glow: #d6f0e3; }
+.answer-visual--day       { --glow: #fdefce; }
+.answer-visual--caregiver { --glow: #fde0ee; }
+.answer-visual--feeling   { --glow: #e6dcff; }
+.answer-visual--comfort   { --glow: #d6eef0; }
+.answer-visual--safe      { --glow: #ffe0d6; }
+
+@media (prefers-reduced-motion: reduce) {
+  .answer-visual { animation: none; }
+}
